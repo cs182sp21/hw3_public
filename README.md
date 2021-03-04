@@ -13,8 +13,7 @@ To prepared your ZIP deliverable, read and follow instructions in the "Preparing
 # Installation
 
 This assignment requires Python 3. If you plan to complete this assignment with a local machine, and not in the Google Colab, please install Python 3.
-The training in this assignment may be take a while on cpu. It is suggested that you complete the assignment on Google Colab,
-and the assignment has been designed assuming you will.
+The training in this assignment may be take a while on cpu. You may want to complete the assignment on Google Colab, in that case make a shortcut to the public folder and copy over the files into a folder named `cs182_hw3`, or rename the `root_folder` variable in the notebooks.
 
 ## Note on Pytorch
 If you are running the notebook locally, you should go to the pytorch website and pick the pytorch installation option that aligns with your OS and CUDA version (if available).
