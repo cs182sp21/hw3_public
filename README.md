@@ -133,7 +133,6 @@ Check that your submission contains:
 - "transformer.py", "transformer_attention.py", "language_model.py"
 - Your model files `*/best_model.py` for each notebook stored in their original directories.
 - Your submission logs stored in `submission_logs`
-If you get the error "bash: ./prepare_submission.sh: Permission denied" run `chmod +x download_data.sh` and try again.
 
 If you do not have zip installed on your device, or some other dependency problem arises, you may also create a zip file manually that contains all *.py and *.ipynb files,
 as well as your `submission_logs` folder and `best_models` folder. Make sure every thing is stored in the base directory of the zip.
