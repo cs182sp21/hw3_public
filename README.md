@@ -131,8 +131,8 @@ This will create a "submission.zip" file which can be submitted for the homework
 Check that your submission contains:
 - "1 Language Modeling.ipynb" and "2 Summarization.ipynb"
 - "transformer.py", "transformer_attention.py", "language_model.py"
-- Your model files `*/best_model.py` for each notebook stored in their original directories.
-- Your submission logs stored in `submission_logs`
+- Your folder for best models for each notebook, `best_models`
+- Your folder for submission logs, `submission_logs`
 
 If you do not have zip installed on your device, or some other dependency problem arises, you may also create a zip file manually that contains all *.py and *.ipynb files,
 as well as your `submission_logs` folder and `best_models` folder. Make sure every thing is stored in the base directory of the zip.
