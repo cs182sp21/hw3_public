@@ -107,7 +107,7 @@ Solutions:
 ## Colab
 
 Google Colab notebooks can be used with a CPU, or with a K-80 GPU (on this assignment, it seems to give a 5x training speed boost).
-The homework resources are available for download in this folder: https://drive.google.com/open?id=1TNhUy9ldZ5mv_GLNNmCBFnLfT3DXwntF
+The homework resources are available for download in this folder: https://drive.google.com/drive/folders/1EeQJ8f2SmU5oZse7IyA9jjgQ9MydtFkL?usp=sharing
 You must be logged in on your UC Berkeley Google account to see the folder, and you must duplicate it (copy it to your own drive) to have write access over the files. The .ipynb can be opened into the Google Colab by double clicked and selecting "Open with Colaboratory".
 The cells in the notebook assume you will store your assignment in a folder called "cs182_hw3" in your main folder, you may want to rename your copy of the files as such.
 You might want to download your trained models, and verify that they work locally before submitting your files.
