@@ -180,7 +180,7 @@ class TransformerDecoderBlock(nn.Module):
         norm_target_selfattn = 
         norm_encoder_outputs = 
         encdec_attention = 
-        # Take the residual between the attention output and the unnormalized decoder-side input
+        # Take the residual between the output and the unnormalized target input of the cross-attention
         res_encdec_attention = 
 
         output = 
