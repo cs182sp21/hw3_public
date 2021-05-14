@@ -47,19 +47,17 @@ class PositionEmbedding(nn.Module):
         seq_pos = th.arange(start, sequence_length + start, dtype=th.float32)
         seq_pos_expanded = seq_pos[None,:,None]
         index = seq_pos_expanded.repeat(*[1,1,self.hidden_size//2])
-
         # create the position embedding as described in the paper
-        # use the `divisor` attribute instantiated in __init__ 
-        sin_embedding = 
-        cos_embedding = 
+        # use the `divisor` attribute instantiated in __init__
+        sin_embedding = th.sin(index / self.divisor)
+        cos_embedding = th.cos(index / self.divisor)
 
         # interleave the sin and cos. For more info see:
         # https://discuss.pytorch.org/t/how-to-interleave-two-tensors-along-certain-dimension/11332/3
-        position_shape = (1, , ) # fill in the other two dimensions
+        position_shape = (1, sequence_length, self.hidden_size) # fill in the other two dimensions
         position_embedding = th.stack((sin_embedding,cos_embedding), dim=3).view(position_shape)
-
         pos_embed_deviced = position_embedding.to(get_device())
-        return  # add the embedding to the input
+        return  inputs + pos_embed_deviced # add the embedding to the input
         ####################################  END OF YOUR CODE  ##################################
 
 class TransformerFeedForward(nn.Module):
@@ -84,10 +82,10 @@ class TransformerFeedForward(nn.Module):
         ####################################  YOUR CODE HERE  ####################################
         # PART 4.1: Implement the FeedForward Layer.
         # As seen in fig1, the feedforward layer includes a normalization and residual
-        norm_input = 
-        dense_out = 
-        dense_drop =  # Add the dropout here
-        return  # Add the residual here
+        norm_input = self.norm(inputs)
+        dense_out = self.feed_forward(norm_input)
+        dense_drop =  self.dropout(dense_out)# Add the dropout here
+        return  dense_drop + inputs # Add the residual here
         ####################################  END OF YOUR CODE  ##################################
 
 
@@ -117,16 +115,16 @@ class TransformerEncoderBlock(nn.Module):
         # Perform a multi-headed self-attention across the inputs.
 
         # First normalize the input with the LayerNorm initialized in the __init__ function (self.norm)
-        norm_inputs = 
+        norm_inputs = self.norm(inputs)
 
         # Apply the self-attention with the normalized input, use the self_attention mask as the optional mask parameter.
-        attn = 
+        attn = self.self_attention((norm_inputs, norm_inputs), self_attention_mask)
 
         # Apply the residual connection. res_attn should sum the attention output and the original, non-normalized inputs
-        res_attn =  # Residual connection of the attention block
+        res_attn = attn + inputs # Residual connection of the attention block
 
         # output passes through a feed_forward network
-        output = 
+        output = self.feed_forward(res_attn)
         return output
 
 
@@ -148,14 +146,14 @@ class TransformerDecoderBlock(nn.Module):
                  dropout = None) -> None:
         super().__init__()
         self.self_norm = nn.LayerNorm(input_size)
-        self.self_attention = MultiHeadAttention(n_heads,[input_size,input_size])
+        self.self_attention = MultiHeadAttention(n_heads,[input_size, input_size])
 
-        self.cross_attention = MultiHeadAttention(n_heads,[input_size,input_size])
+        self.cross_attention = MultiHeadAttention(n_heads,[input_size, input_size])
         self.cross_norm_source = nn.LayerNorm(input_size)
         self.cross_norm_target = nn.LayerNorm(input_size)
         self.feed_forward = TransformerFeedForward(input_size, filter_size, hidden_size, dropout)
 
-    def forward(self, decoder_inputs, encoder_outputs, self_attention_mask=None, cross_attention_mask=None):    
+    def forward(self, decoder_inputs, encoder_outputs, self_attention_mask=None, cross_attention_mask=None):
         # The cross-attention mask should have shape [batch_size x target_len x input_len]
 
         ####################################  YOUR CODE HERE  ####################################
@@ -166,10 +164,10 @@ class TransformerDecoderBlock(nn.Module):
         # mask to control for the future outputs.
         # This generates a tensor of size [batch_size x target_len x d_model]
 
-        norm_decoder_inputs = 
+        norm_decoder_inputs = self.self_norm(decoder_inputs)
 
-        target_selfattn = 
-        res_target_self_attn = 
+        target_selfattn =  self.self_attention((norm_decoder_inputs, norm_decoder_inputs), mask=self_attention_mask)
+        res_target_self_attn = target_selfattn + decoder_inputs
 
         # Compute the attention using the keys/values from the encoder, and the query from the
         # decoder. This takes the encoder output of size [batch_size x source_len x d_model] and the
@@ -177,13 +175,13 @@ class TransformerDecoderBlock(nn.Module):
         # a multi-headed attention across them, giving an output of [batch_size x target_len x d_model]
         # using the encoder as the keys and values and the target as the queries
 
-        norm_target_selfattn = 
-        norm_encoder_outputs = 
-        encdec_attention = 
+        norm_target_selfattn = self.cross_norm_target(res_target_self_attn)
+        norm_encoder_outputs = self.cross_norm_source(encoder_outputs)
+        encdec_attention = self.cross_attention((norm_target_selfattn, norm_encoder_outputs), cross_attention_mask)
         # Take the residual between the output and the unnormalized target input of the cross-attention
-        res_encdec_attention = 
+        res_encdec_attention = encdec_attention + res_target_self_attn
 
-        output = 
+        output = self.feed_forward(res_encdec_attention)
 
         return output
 
@@ -372,12 +370,12 @@ class TransformerInputEmbedding(nn.Module):
 class Transformer(nn.Module):
 
     def __init__(self,
-                 vocab_size = None,
-                 n_layers = 6,
-                 n_heads = 8,
-                 d_model = 512,
-                 d_filter = 2048,
-                 dropout = None,
+                 vocab_size=None,
+                 n_layers=6,
+                 n_heads=8,
+                 d_model=512,
+                 d_filter=2048,
+                 dropout=None,
                  embedding_initializer=None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
@@ -390,7 +388,8 @@ class Transformer(nn.Module):
         self.d_filter = d_filter
         self.dropout_weight = 0 if dropout is None else dropout
 
-        input_embedding = TransformerInputEmbedding(d_model, vocab_size, dropout) # , embedding_initializer=embedding_initializer
+        input_embedding = TransformerInputEmbedding(d_model, vocab_size,
+                                                    dropout)  # , embedding_initializer=embedding_initializer
 
         output_layer = EmbeddingTranspose(input_embedding.embedding)
 
@@ -400,8 +399,8 @@ class Transformer(nn.Module):
         # Build the decoder stack.
         self.decoder = TransformerDecoder(input_embedding, output_layer, n_layers, n_heads, d_model, d_filter, dropout)
 
-    def forward(self, source_sequence, target_sequence, encoder_mask, decoder_mask, mask_future=True, shift_target_sequence_right=True):
-
+    def forward(self, source_sequence, target_sequence, encoder_mask, decoder_mask, mask_future=True,
+                shift_target_sequence_right=True):
         # Unpack the source and target sequences from the encoder.
         # Source Sequence: [batch_size x source_length]
         # Target Sequence: [batch_size x target_length]
@@ -424,15 +423,16 @@ class Transformer(nn.Module):
         # PART 5: Implement the full Transformer block
 
         # Using the self.encoder, encode the source_sequence, and provide the encoder_mask variable as the optional mask.
-        encoder_output = 
+        encoder_output = self.encoder(source_sequence, encoder_mask)
 
         # Finally, we need to do a decoding this should generate a
         # tensor of shape [batch_size x target_length x d_model]
         # from the encoder output.
-        # Using the self.decoder, provide it with the decoder input, and the encoder_output. 
+        # Using the self.decoder, provide it with the decoder input, and the encoder_output.
         # As usual, provide it with the encoder and decoder_masks
         # Finally, You should also pass it these two optional arguments:
         # shift_target_sequence_right=shift_target_sequence_right, mask_future=mask_future
-        decoder_output = 
+        decoder_output = self.decoder(target_sequence, encoder_output, encoder_mask, decoder_mask, mask_future,
+                                      shift_target_sequence_right)
 
-        return decoder_output # We return the decoder's output
+        return decoder_output  # We return the decoder's output
